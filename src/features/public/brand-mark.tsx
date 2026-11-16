@@ -1,4 +1,4 @@
-import { Bot } from "lucide-react";
+import { Landmark } from "lucide-react";
 
 export function BrandMark({ className = "" }: { className?: string }) {
   return (
@@ -6,7 +6,7 @@ export function BrandMark({ className = "" }: { className?: string }) {
       aria-hidden="true"
       className={`grid size-8 place-items-center rounded-[var(--gui-radius-s)] bg-[var(--gui-color-1)] text-[var(--gui-accent-text-accessible)] ${className}`}
     >
-      <Bot className="size-[18px]" strokeWidth={2} />
+      <Landmark className="size-5" strokeWidth={1.8} />
     </span>
   );
 }

@@ -22,6 +22,28 @@
     "exampleSummary": "Doświadczenie w produktach B2B i automatyzacji obsługi. Podczas rozmowy warto doprecyzować zakres samodzielnych decyzji."
   },
   {
+    "id": "candidate-julia",
+    "role": "candidate",
+    "name": "Julia Mazur",
+    "headline": "Product Manager · procesy finansowe",
+    "bio": "Prowadziłam badania i pilotaże narzędzi dla zespołów finansowych.",
+    "location": "Warszawa",
+    "cv": "Julia Mazur — Product Manager. 2022–2026: rozwój narzędzi do obsługi dokumentów finansowych. Przeprowadziłam rozmowy z użytkownikami, ustaliłam zakres pilotażu i mierzyłam liczbę poprawek po wdrożeniu. Współpracowałam z zespołem inżynierskim i wdrożeniowym.",
+    "exampleScore": 78,
+    "exampleSummary": "Przykład pracy nad procesem finansowym i pilotażem. W rozmowie warto ustalić zakres osobistych decyzji."
+  },
+  {
+    "id": "candidate-pawel",
+    "role": "candidate",
+    "name": "Paweł Zieliński",
+    "headline": "Product Analyst · eksperymenty",
+    "bio": "Analizuję procesy i wyniki eksperymentów w produktach cyfrowych.",
+    "location": "Łódź",
+    "cv": "Paweł Zieliński — Product Analyst. 2021–2026: analiza lejków i projektowanie eksperymentów dla narzędzi samoobsługowych. Przygotowywałem pomiary przed i po zmianach oraz raporty dla zespołu produktu. Nie prowadziłem samodzielnie wdrożeń AI.",
+    "exampleScore": 81,
+    "exampleSummary": "Mocne doświadczenie analityczne; zakres prowadzenia produktu i wdrożeń AI wymaga sprawdzenia."
+  },
+  {
     "id": "employer-brightlabs",
     "role": "employer",
     "companyId": "10000000-0000-4000-8000-000000000001",

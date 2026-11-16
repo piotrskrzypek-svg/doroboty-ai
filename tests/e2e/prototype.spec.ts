@@ -167,6 +167,56 @@ test("another company cannot see or change a candidate application", async ({ pa
   await page.goto("/#/app/kandydaci/application-example");
   await expect(page.getByRole("heading", { name: "Nie znaleziono strony" })).toBeVisible();
 });
+test("fresh employer deep link selects the right persona and returns to candidates", async ({
+  page,
+}) => {
+  await page.goto("/#/app/kandydaci");
+  await expect(page.getByRole("heading", { name: "Wybierz osobę" })).toBeVisible();
+  await expect(page.locator(".editorial-employer")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Wejdź jako Anna Kowalska" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Wejdź jako Karolina Wiśniewska" }).click();
+  await expect(page).toHaveURL(/\/#\/app\/kandydaci$/);
+  await expect(page.getByRole("heading", { name: "Kandydaci", exact: true })).toBeVisible();
+  await expect(page.locator(".editorial-employer")).toHaveCount(1);
+
+  await choose(page, "Anna Kowalska");
+  await page.goto("/#/app/kandydaci");
+  await page.getByRole("link", { name: "Zmień osobę" }).last().click();
+  await expect(page.locator(".editorial-employer")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Wejdź jako Anna Kowalska" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Wejdź jako Karolina Wiśniewska" }).click();
+  await expect(page).toHaveURL(/\/#\/app\/kandydaci$/);
+  await expect(page.getByRole("heading", { name: "Kandydaci", exact: true })).toBeVisible();
+});
+test("employer reviews a manual shortlist and keeps every application available", async ({
+  page,
+}) => {
+  await choose(page, "Karolina Wiśniewska");
+  await page.goto("/#/app/kandydaci");
+  const shortlist = page.getByRole("region", { name: "Kandydaci do rozmowy" });
+  await expect(shortlist.locator(".shortlist-card")).toHaveCount(2);
+  await expect(
+    page.getByRole("heading", { name: "Wszystkie aplikacje do tej oferty (3)" }),
+  ).toBeVisible();
+  await page.screenshot({ path: "artifacts/employer-shortlist-desktop.png", fullPage: true });
+  await expect(page.getByRole("link", { name: "Paweł Zieliński", exact: true })).toBeVisible();
+  const julia = shortlist.locator(".shortlist-card").filter({ hasText: "Julia Mazur" });
+  await expect(julia).toContainText("Ustaliłam z zespołem zakres pilotażu");
+  await julia.getByRole("link", { name: "Zobacz aplikację i podejmij decyzję" }).click();
+  await expect(page.getByRole("heading", { name: "Julia Mazur" })).toBeVisible();
+  await page.getByRole("button", { name: "W przeglądzie", exact: true }).click();
+  await page.locator(".record-breadcrumb").getByRole("link", { name: "Kandydaci" }).click();
+  await expect(page).toHaveURL(/oferta=20000000-0000-4000-8000-000000000001/);
+  await expect(
+    shortlist.locator(".shortlist-card").filter({ hasText: "Julia Mazur" }),
+  ).toContainText("W przeglądzie");
+  await page.reload();
+  await expect(shortlist.locator(".shortlist-card")).toHaveCount(2);
+  await page.goto("/#/app/kandydaci?oferta=20000000-0000-4000-8000-000000000004");
+  await expect(shortlist).toContainText("nie przygotowano jeszcze wskazań");
+  await page.setViewportSize({ width: 320, height: 740 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
 test("candidate withdrawal is confirmed and terminal", async ({ page }) => {
   await application(page);
   await page.getByRole("link", { name: "AI Product Manager", exact: true }).click();
@@ -289,7 +339,7 @@ test("mobile navigation, light-only appearance and keyboard person selection", a
   await page.reload();
   await expect(page.getByRole("combobox", { name: "Motyw" })).toHaveCount(0);
   await expect(page.locator("html")).not.toHaveClass(/dark/);
-  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(244, 244, 240)");
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(239, 226, 207)");
   await page.screenshot({ path: "artifacts/settings-mobile-light.png", fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
@@ -458,14 +508,14 @@ test("legacy dark preference keeps scenario data and renders the light interface
     "Zachowaj mój profil",
   );
   await expect(page.locator("html")).not.toHaveClass(/dark/);
-  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(244, 244, 240)");
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(239, 226, 207)");
   await page.getByRole("button", { name: "Zapisz profil", exact: true }).click();
   expect(
     await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).theme, STORAGE_KEY),
   ).toBeUndefined();
 });
 
-test("Poster People offer keeps desktop conditions/actions and places them before mobile reading", async ({
+test("editorial offer keeps desktop conditions/actions and places them before mobile reading", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -576,34 +626,33 @@ test("desktop reset synchronizes search, category and facets with the URL", asyn
   );
 });
 
-test("canonical marketplace typography and search geometry match Poster People breakpoints", async ({
+test("editorial marketplace keeps readable type and open rows across breakpoints", async ({
   page,
 }) => {
-  for (const [width, title, card] of [
-    [1280, "72px", "28px"],
-    [1100, "58px", "26px"],
-    [850, "52px", "28px"],
-    [390, "43px", "26px"],
-  ] as const) {
+  for (const width of [1280, 1100, 850, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/#/oferty");
-    await expect(page.locator(".pp-intro-copy h1")).toHaveCSS("font-size", title);
-    await expect(page.locator(".pp-job-title").first()).toHaveCSS("font-size", card);
+    await expect(page.locator(".pp-intro-copy h1")).toHaveCSS("font-family", /Arial Narrow/);
+    await expect(page.locator(".pp-intro-copy h1")).toHaveCSS("font-weight", "900");
+    await expect(page.locator(".pp-job-card").first()).toHaveCSS("border-radius", "0px");
+    await expect(page.locator(".pp-job-title").first()).toHaveCSS("font-family", /Arial Narrow/);
     await expect(page.getByRole("textbox", { name: "Szukaj ofert", exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
     if (width === 1280) {
       expect((await page.locator(".pp-search-form").boundingBox())!.width).toBe(1200);
-      await expect(page.locator(".pp-salary-tag").first()).toHaveCSS("font-size", "15px");
     }
   }
-  for (const [width, title, salary] of [
-    [1280, "64px", "24px"],
-    [850, "46px", "20px"],
-    [390, "47px", "25px"],
-  ] as const) {
+  for (const width of [1280, 850, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/#/oferty/ai-product-manager");
-    await expect(page.locator(".pp-offer-hero h1")).toHaveCSS("font-size", title);
-    await expect(page.locator(".pp-offer-pay .pp-salary-tag")).toHaveCSS("font-size", salary);
+    await expect(page.locator(".pp-offer-hero h1")).toHaveCSS("font-family", /Arial Narrow/);
+    await expect(page.locator(".pp-offer-hero")).toHaveCSS("border-radius", "0px");
+    await expect(page.locator(".pp-offer-pay .pp-salary-tag")).toHaveCSS("border-radius", "0px");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
   }
 });
 
@@ -648,39 +697,63 @@ for (const width of [1280, 390])
     await expect(page.getByRole("textbox", { name: "Szukaj ofert", exact: true })).toHaveValue("");
   });
 
-test("homepage surfaces and marketplace action type roles match the shared reference", async ({
-  page,
-}) => {
+test("editorial surfaces and actions remain usable across screen sizes", async ({ page }) => {
   await page.goto("/#/");
   const cards = page.locator("main article.prototype-panel");
   await expect(cards).toHaveCount(3);
   for (const card of await cards.all()) {
-    await expect(card).toHaveCSS("border-radius", "24px");
-    await expect(card).toHaveCSS("box-shadow", /rgb\(24, 24, 24\).*1px inset/);
+    await expect(card).toHaveCSS("border-radius", "0px");
+    await expect(card).toHaveCSS("box-shadow", "none");
   }
-  for (const [width, searchSize, offerSize, payLine] of [
-    [1280, "14px", "14px", "34.8px"],
-    [1100, "14px", "13px", "31.9px"],
-    [850, "12px", "12px", "29px"],
-    [700, "12px", "14px", "36.25px"],
-    [600, "12px", "14px", "33.75px"],
-    [390, "12px", "14px", "33.75px"],
-  ] as const) {
+  for (const width of [1280, 1100, 850, 700, 600, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/#/oferty");
     const search = page.getByRole("button", { name: "Szukaj", exact: true });
-    await expect(search).toHaveCSS("font-size", searchSize);
-    await expect(search).toHaveCSS("font-weight", "600");
-    await expect(search).toHaveCSS("letter-spacing", "normal");
-    await expect(search).toHaveCSS("line-height", `${parseInt(searchSize) * 1.5}px`);
+    await expect(search).toBeVisible();
+    await expect(search).toHaveCSS("background-color", "rgb(158, 59, 29)");
+    await expect(search).toHaveCSS("border-radius", "0px");
     await expect(search).toHaveCSS("border-top-width", "1px");
     await expect(search).toHaveCSS("box-shadow", "none");
     await page.goto("/#/oferty/ai-product-manager");
     const action = page.locator(".pp-offer-actions a").first();
-    await expect(action).toHaveCSS("font-size", offerSize);
-    await expect(action).toHaveCSS("font-weight", "600");
-    await expect(action).toHaveCSS("line-height", `${parseInt(offerSize) * 1.5}px`);
-    await expect(page.locator(".pp-offer-pay .pp-salary-tag")).toHaveCSS("line-height", payLine);
+    await expect(action).toBeVisible();
+    await expect(action).toHaveCSS("border-radius", "0px");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+  }
+});
+
+test("editorial direction spans public, candidate and employer screens", async ({ page }) => {
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const route of ["/", "/oferty", "/oferty/ai-product-manager", "/metodologia"]) {
+      await page.goto(`/#${route}`);
+      await expect(page.locator(".editorial-site")).toHaveCount(1);
+      await expect(page.locator(".editorial-site h1").first()).toHaveCSS(
+        "font-family",
+        /Arial Narrow/,
+      );
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+    }
+    await choose(page, "Anna Kowalska");
+    for (const route of ["/app", "/app/profil", "/aplikuj/ai-product-manager"]) {
+      await page.goto(`/#${route}`);
+      await expect(page.locator(".editorial-site")).toHaveCount(1);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+    }
+    await choose(page, "Karolina Wiśniewska");
+    for (const route of ["/app", "/app/oferty", "/app/oferty/nowa", "/app/kandydaci"]) {
+      await page.goto(`/#${route}`);
+      await expect(page.locator(".editorial-site")).toHaveCount(1);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+    }
   }
 });
 

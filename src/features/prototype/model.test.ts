@@ -21,6 +21,24 @@ function submitted() {
   );
 }
 describe("coherent browser scenario", () => {
+  it("adds shortlist scenario records to an older save without replacing existing decisions", () => {
+    const old = initialState();
+    old.people = old.people.filter(
+      (person) => !["candidate-julia", "candidate-pawel"].includes(person.id),
+    );
+    old.applications = old.applications.filter(
+      (application) => application.id === "application-example",
+    );
+    old.applications[0].stage = "reviewed";
+    old.applications[0].events.push({ stage: "reviewed", at: time, note: "Earlier review" });
+    const loaded = transition(as(old, "employer-brightlabs"), { type: "load_shortlist_demo" });
+    expect(loaded.applications).toHaveLength(3);
+    expect(loaded.applications[0].events.at(-1)?.note).toBe("Earlier review");
+    expect(transition(loaded, { type: "load_shortlist_demo" }).applications).toHaveLength(3);
+    expect(() =>
+      transition(as(old, "employer-northstar"), { type: "load_shortlist_demo" }),
+    ).toThrow();
+  });
   it("requires approval and prevents duplicate applications", () => {
     const s = as(initialState(), "candidate-anna");
     const input = {
@@ -33,7 +51,7 @@ describe("coherent browser scenario", () => {
     };
     expect(() => transition(s, input, time)).toThrow("Zatwierdź");
     expect(() => transition(submitted(), { ...input, consent: true }, time)).toThrow("już wysłana");
-    expect(s.applications).toHaveLength(1);
+    expect(s.applications).toHaveLength(3);
   });
   it("preserves approved sources while profile and notes evolve", () => {
     const s = submitted();

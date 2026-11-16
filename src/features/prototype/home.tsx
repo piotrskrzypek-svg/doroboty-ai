@@ -5,9 +5,10 @@ import { buttonVariants } from "@/components/ui/button";
 import { JobCard } from "@/features/jobs/job-card";
 import { usePrototype } from "./store";
 import { publishedJobs } from "./model";
+import { PrototypeDisclosure } from "./shell";
 import { cn } from "@/lib/utils";
 
-import peopleArt from "../../../docs/design-system/agent-kit/assets/people.png";
+import heroAllegory from "@/app/illustrations/hero-allegory.png";
 
 const categories = [
   {
@@ -36,11 +37,12 @@ export default function HomePage() {
       <section className="home-intro bg-muted/25 shadow-[var(--gui-divider-bottom-shadow)]">
         <div className="mx-auto grid max-w-[1360px] gap-12 px-5 py-16 lg:grid-cols-[1.3fr_0.7fr] lg:px-8 lg:py-24">
           <div>
+            <PrototypeDisclosure className="mb-6" />
             <Badge variant="secondary" className="px-3 py-1 text-xs">
               Dobra robota. Z AI w środku.
             </Badge>
             <h1 className="mt-6 max-w-4xl text-5xl leading-[var(--gui-leading-xxl)] font-semibold tracking-[var(--gui-tracking-xs)] sm:text-6xl lg:text-7xl">
-              Praca dla ludzi, którzy dowożą z AI.
+              Praca dla ludzi, <em>którzy dowożą z AI.</em>
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
               Wyselekcjonowane role, w których AI jest częścią odpowiedzialności, decyzji i wyniku
@@ -58,7 +60,14 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
-          <img className="people-art" src={peopleArt} alt="Dwie osoby pracujące razem z laptopem" />
+          <figure className="editorial-hero-figure">
+            <img
+              className="people-art"
+              src={heroAllegory}
+              alt="Współczesna alegoria AI: antyczna postać z ceglastym wieńcem"
+            />
+            <figcaption>Ilustracja AI · współczesna alegoria</figcaption>
+          </figure>
         </div>
       </section>
 

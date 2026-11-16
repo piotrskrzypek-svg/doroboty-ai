@@ -1,3 +1,5 @@
+import methodAllegory from "@/app/illustrations/method-allegory.png";
+
 const criteria = [
   ["AI zmienia pracę", "Technologia wpływa na odpowiedzialność, decyzje lub rezultat stanowiska."],
   [
@@ -17,16 +19,24 @@ const criteria = [
 export default function MethodologyPage() {
   return (
     <article className="mx-auto max-w-5xl px-5 py-14 lg:px-8 lg:py-20">
-      <p className="text-xs font-medium tracking-[var(--gui-tracking-xl)] text-muted-foreground">
-        Nasze kryteria
-      </p>
-      <h1 className="mt-3 text-4xl font-semibold tracking-[var(--gui-tracking-s)] sm:text-5xl">
-        Nie każda praca z chatbotem jest pracą z AI.
-      </h1>
-      <p className="mt-5 max-w-3xl text-lg leading-relaxed text-muted-foreground">
-        DoRoboty.ai pokazuje role, w których AI jest częścią realnej odpowiedzialności i mierzalnego
-        wyniku.
-      </p>
+      <div className="editorial-method-intro">
+        <div>
+          <p className="text-xs font-medium tracking-[var(--gui-tracking-xl)] text-muted-foreground">
+            Nasze kryteria
+          </p>
+          <h1 className="mt-3 text-4xl font-semibold tracking-[var(--gui-tracking-s)] sm:text-5xl">
+            Nie każda praca z chatbotem jest pracą z AI.
+          </h1>
+          <p className="mt-5 max-w-3xl text-lg leading-relaxed text-muted-foreground">
+            DoRoboty.ai pokazuje role, w których AI jest częścią realnej odpowiedzialności i
+            mierzalnego wyniku.
+          </p>
+        </div>
+        <figure>
+          <img src={methodAllegory} alt="Współczesna alegoria AI: Prometeusz z ogniem" />
+          <figcaption>Ilustracja AI · współczesna alegoria</figcaption>
+        </figure>
+      </div>
       <div className="mt-12 grid gap-5 sm:grid-cols-2">
         {criteria.map(([title, body], index) => (
           <section key={title} className="rounded-xl bg-card p-6">

@@ -8,6 +8,8 @@
 @import "./records.css";
 @import "./application.css";
 @import "./interactions.css";
+@import "./editorial-site.css";
+@import "./editorial-employer.css";
 
 @theme inline {
   --color-background: var(--background);

@@ -24,7 +24,15 @@ export function ApplicationRecord({
 }: {
   application: Pick<
     Application,
-    "candidateId" | "candidateName" | "jobTitle" | "stage" | "answer" | "cv" | "score" | "summary"
+    | "candidateId"
+    | "candidateName"
+    | "jobId"
+    | "jobTitle"
+    | "stage"
+    | "answer"
+    | "cv"
+    | "score"
+    | "summary"
   >;
   companyName: string;
   audience: "candidate" | "employer";
@@ -41,12 +49,15 @@ export function ApplicationRecord({
     <article className="recruiting-record">
       <header className="recruiting-header">
         <nav aria-label="Ścieżka nawigacji" className="record-breadcrumb">
-          <BackLink to={candidate ? "/app/aplikacje" : "/app/kandydaci"}>
+          <BackLink
+            to={candidate ? "/app/aplikacje" : `/app/kandydaci?oferta=${application.jobId}`}
+          >
             {candidate ? "Moje aplikacje" : "Kandydaci"}
           </BackLink>
           <span aria-hidden="true">/</span>
           <span aria-current="page">{title}</span>
         </nav>
+        {!candidate && <p className="editorial-kicker">DO ROBOTY / APLIKACJA KANDYDATA</p>}
         <h1>{title}</h1>
         <div className="record-meta">
           <span>

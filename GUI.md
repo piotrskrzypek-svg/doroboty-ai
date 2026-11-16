@@ -1,21 +1,17 @@
-# GUI — DoRoboty.ai Poster People
+# GUI — DoRoboty.ai editorial direction
 
-The required visual direction for new and changed screens is the accepted **Poster People** design system. The project instructions are [docs/design-system/README.md](docs/design-system/README.md). Read them before UI work; they define how the standalone reference is adapted to this React/TypeScript/Vite application. The previous theme reference tree and skill requirements have been removed.
+The user selected **01 — Plakat redakcyjny** for the entire app. See the local source observations in [`../DoRoboty.ai/design-system/DESIGN.md`](../DoRoboty.ai/design-system/DESIGN.md) and the installed [`doroboty-ai-editorial` skill](/Users/piotr.skrzypek/.codex/skills/doroboty-ai-editorial/SKILL.md). Their hex values and font stacks are prototype estimates, not measured official brand tokens.
 
-## Read and preview
+## Current host implementation
 
-1. [Project integration guide](docs/design-system/README.md): authority, React/Base UI mapping, routes/state, assets and completion criteria.
-2. [Host implementation rules](docs/design-system/IMPLEMENTATION.md), [React component catalog](docs/design-system/HOST-COMPONENTS.md), [record/CV APIs](docs/design-system/RECORDS.md), [acceptance checklist](docs/design-system/VERIFICATION.md) and [status/open findings](docs/design-system/STATUS.md): reusable owners, actual contracts, URL/focus rules, breakpoint values and regression scenarios.
-3. [Agent entry point](docs/design-system/agent-kit/design.md): visual hierarchy, composition, exact standalone imports and extension boundaries.
-4. [Component API](docs/design-system/agent-kit/components/API.md) plus relevant [human reference](docs/design-system/agent-kit/reference/components.md): anatomy, variants, states and evidence.
-5. `npm run design-system:dev`: local catalog, full listing and offer on port 8952. `npm run design-system:check` checks the immutable kit. No global skill or extra installation is required.
+- [`src/app/editorial-site.css`](src/app/editorial-site.css) contains the app-wide palette, typography, flat controls, open rows, page layouts and mobile adaptations.
+- [`src/app/editorial-employer.css`](src/app/editorial-employer.css) refines the employer candidate list and application detail.
+- [`src/app/illustrations/`](src/app/illustrations/) contains contemporary AI allegories reused from the selected local prototype. Keep captions and truthful alternative text; do not describe them as museum objects.
+- The shared brand mark and favicon use an antique portico in the rust and paper palette.
+- Use warm paper, near-black ink, restrained rust, heavy readable sans display type, a brief italic serif accent and thin rules. Keep functional screens quieter than public hero sections.
 
-## Implement in this app
+## Product and verification boundaries
 
-- Preserve the requested scope, React/TypeScript/Vite, hash routes, Base UI's `render` composition, Zod/local data operations and current application workflows.
-- Use local Geist Serif Regular for headings, paper/white/ink/pink roles, source contours and radii, complete title wrapping and responsive listing/offer composition.
-- Adapt host tokens and existing primitives together. Do not paste the kit's global reset or vanilla controllers into React, substitute example data for product state, or create a parallel button/card library.
-- Keep docs/design-system/agent-kit unchanged as the reference; implement product UI in src/ and the host theme layer. Existing token names do not establish an alternative visual target.
-- Compare desktop/mobile evidence; test long content, missing salary/marks, keyboard focus, selection, dialogs and recovery. Run ./scripts/verify and report actual checks. The original kit report does not verify a new React screen.
+Preserve the React/TypeScript/Vite app, hash routes, Base UI composition, local Zod state, role controls, filters, forms and application flows. Keep the bundled Poster People kit in [`docs/design-system/agent-kit`](docs/design-system/agent-kit) immutable as a historical reference; its visual tokens are no longer the current host target under the user's selected direction.
 
-The running application has a host adaptation; current code still requires comparison with the source on each UI task. Follow the implementation map rather than creating parallel controls. Keep Search outside mobile filters, preserve copied section URLs under HashRouter, manage focus after chip removal, reuse outlined surfaces and compare full action type roles plus one contour. Record actual evidence and partial findings; preserve old audit artifacts in separate task-specific directories.
+Check desktop and narrow mobile views, long titles, keyboard focus, selection, dialogs, error states and data recovery. Run `./scripts/verify` and report the checks that actually ran. The editorial task scope and evidence are recorded in [`docs/tasks/editorial-site-redesign.md`](docs/tasks/editorial-site-redesign.md).

@@ -107,6 +107,113 @@ footer {
   padding: 0;
   border: 0;
 }
+.employer-job-choice {
+  max-width: 460px;
+  margin-bottom: 28px;
+}
+.employer-shortlist {
+  border: 1px solid var(--foreground);
+  border-radius: 24px;
+  background: #fff;
+  padding: clamp(18px, 3vw, 32px);
+}
+.shortlist-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.shortlist-heading h2 {
+  margin-block: 5px 10px;
+}
+.shortlist-heading p:last-child {
+  max-width: 680px;
+  line-height: 1.6;
+}
+.shortlist-eyebrow {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.shortlist-count,
+.shortlist-stage {
+  display: inline-flex;
+  width: fit-content;
+  border: 1px solid var(--foreground);
+  border-radius: 10px;
+  background: #ffe0f7;
+  padding: 5px 10px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+.shortlist-count {
+  flex-shrink: 0;
+}
+.shortlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr));
+  gap: 16px;
+}
+.shortlist-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+  border: 1px solid var(--foreground);
+  border-radius: 24px;
+  background: var(--background);
+  padding: 22px;
+}
+.shortlist-card-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.shortlist-card h3 {
+  margin: 0;
+}
+.shortlist-copy {
+  display: grid;
+  gap: 12px;
+  line-height: 1.6;
+}
+.shortlist-copy p {
+  margin: 0;
+}
+.shortlist-card a {
+  align-self: flex-start;
+  margin-top: auto;
+  white-space: normal;
+  text-align: center;
+}
+.shortlist-empty {
+  margin: 0;
+  line-height: 1.6;
+}
+.shortlist-demo-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  margin-top: 20px;
+  border-top: 1px solid var(--foreground);
+  padding-top: 20px;
+}
+.shortlist-demo-action p {
+  flex: 1 1 260px;
+  line-height: 1.6;
+}
+@media (max-width: 600px) {
+  .shortlist-heading {
+    flex-direction: column;
+  }
+  .shortlist-card {
+    padding: 18px;
+  }
+}
 .field {
   font-size: 14px;
   line-height: 1.6;

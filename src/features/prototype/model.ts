@@ -11,6 +11,7 @@ const id = z
 const shortText = z.string().trim().min(1).max(200);
 const text = z.string().trim().max(12000);
 export const MIN_APPLICATION_ANSWER_LENGTH = 20;
+export const curatedJobId = "20000000-0000-4000-8000-000000000001";
 const companySchema = z.object({
   id,
   slug: id,
@@ -199,6 +200,7 @@ export type Person = State["people"][number];
 export type Application = State["applications"][number];
 export type Action =
   | { type: "select_person"; id: string | null }
+  | { type: "load_shortlist_demo" }
   | { type: "profile"; value: z.infer<typeof profileSchema> }
   | { type: "toggle_saved"; jobId: string }
   | { type: "draft"; jobId: string; notes: string; generated: string; answer: string }
@@ -244,6 +246,36 @@ export function initialState(): State {
     stage: "submitted",
     events: [{ stage: "submitted", at: "2026-11-02T09:00:00.000Z", note: "" }],
   });
+  for (const [candidateId, answer, at] of [
+    [
+      "candidate-julia",
+      "W projekcie dla zespołu finansowego przeprowadziłam rozmowy o ręcznym obiegu dokumentów. Ustaliłam z zespołem zakres pilotażu, a po wdrożeniu porównałam liczbę poprawek. Mogę opowiedzieć, które decyzje podjęłam sama i co należało do inżynierów.",
+      "2026-11-02T10:00:00.000Z",
+    ],
+    [
+      "candidate-pawel",
+      "Analizowałem lejki i projektowałem pomiary eksperymentów dla narzędzi samoobsługowych. Przygotowywałem raporty przed i po zmianach; chciałbym rozwinąć się w prowadzeniu produktu i wdrożeń AI.",
+      "2026-11-02T11:00:00.000Z",
+    ],
+  ] as const) {
+    const candidate = state.people.find((person) => person.id === candidateId)!;
+    state.applications.push({
+      id: `application-${candidateId}`,
+      candidateId,
+      jobId: job.id,
+      companyId: job.companyId,
+      jobTitle: job.title,
+      candidateName: candidate.name,
+      cv: candidate.cv,
+      answer,
+      sourceNotes: "",
+      generatedAnswer: "",
+      score: candidate.exampleScore,
+      summary: candidate.exampleSummary,
+      stage: "submitted",
+      events: [{ stage: "submitted", at, note: "" }],
+    });
+  }
   return stateSchema.parse(state);
 }
 export function publishedJobs(state: State): JobWithCompany[] {
@@ -278,6 +310,30 @@ export function transition(
     if (action.id !== null && !s.people.some((x) => x.id === action.id))
       fail("Nie znaleziono osoby.");
     s.activePersonId = action.id;
+  } else if (action.type === "load_shortlist_demo") {
+    const owner = employer();
+    const job =
+      s.jobs.find((item) => item.id === curatedJobId && item.companyId === owner.companyId) ??
+      fail("Ta oferta nie należy do wybranej firmy.");
+    const demo = initialState();
+    for (const candidateId of ["candidate-julia", "candidate-pawel"]) {
+      const examplePerson = demo.people.find((item) => item.id === candidateId)!;
+      const existingPerson = s.people.find((item) => item.id === candidateId);
+      if (existingPerson && existingPerson.role !== "candidate")
+        fail("Identyfikator osoby jest zajęty.");
+      if (!existingPerson) s.people.push(examplePerson);
+      const exampleApplication = demo.applications.find(
+        (item) => item.candidateId === candidateId,
+      )!;
+      const existingApplication = s.applications.find((item) => item.id === exampleApplication.id);
+      if (existingApplication && existingApplication.candidateId !== candidateId)
+        fail("Identyfikator aplikacji jest zajęty.");
+      if (
+        !existingApplication &&
+        !s.applications.some((item) => item.candidateId === candidateId && item.jobId === job.id)
+      )
+        s.applications.push({ ...exampleApplication, jobTitle: job.title });
+    }
   } else if (action.type === "profile")
     Object.assign(candidate(), profileSchema.parse(action.value));
   else if (action.type === "toggle_saved") {

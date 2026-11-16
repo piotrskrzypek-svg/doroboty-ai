@@ -32,6 +32,59 @@ export function Notice({ children }: { children: ReactNode }) {
     </div>
   );
 }
+export function PrototypeDisclosure({ className }: { className?: string }) {
+  return (
+    <aside
+      aria-label="Informacja o prototypie"
+      className={cn("prototype-notice p-4 text-sm", className)}
+    >
+      <strong>Prototyp szkoleniowy.</strong> To nie jest prawdziwy serwis rekrutacyjny. Wybór osoby
+      nie jest logowaniem ani ochroną danych. Używaj wyłącznie przykładowych danych i CV; nie wpisuj
+      prawdziwych ani poufnych informacji.
+    </aside>
+  );
+}
+function SafeErrorReport({ kind }: { kind: string }) {
+  const [report, setReport] = useState("");
+  const [copied, setCopied] = useState(false);
+  const reportText = [
+    "Zgłoszenie problemu z prototypem DoRoboty.ai",
+    `Czas UTC: ${new Date().toISOString()}`,
+    `Rodzaj problemu: ${kind}`,
+    "Treść formularzy, scenariusza i notatek nie została dołączona.",
+  ].join("\n");
+
+  async function copyReport() {
+    try {
+      await navigator.clipboard.writeText(reportText);
+      setCopied(true);
+      setReport("");
+    } catch {
+      setReport(reportText);
+      setCopied(false);
+    }
+  }
+
+  return (
+    <aside className="prototype-notice mt-3 p-3 text-sm" aria-label="Zgłoszenie błędu">
+      <p>
+        Zgłoś problem prowadzącemu ćwiczenie w uzgodnionym kanale kursu. Raport nie zawiera danych
+        scenariusza ani notatek.
+      </p>
+      <Button className="mt-3" size="sm" variant="outline" onClick={copyReport}>
+        Kopiuj bezpieczne zgłoszenie
+      </Button>
+      {copied && <p role="status">Gotowe. Wklej zgłoszenie w kanale kursu.</p>}
+      {report && (
+        <label className="mt-3 block">
+          <span className="sr-only">Tekst bezpiecznego zgłoszenia</span>
+          <textarea className="mt-2 w-full" readOnly rows={4} value={report} />
+          <span>Skopiuj ten tekst i wklej go w kanale kursu.</span>
+        </label>
+      )}
+    </aside>
+  );
+}
 export function PageTitle({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
     <div className="page-heading">
@@ -69,7 +122,11 @@ const employerNav = [
 export function Shell() {
   const { state, issue, error, clearError } = usePrototype();
   const person = currentPerson(state);
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+  const editorialRoute =
+    pathname.startsWith("/app/kandydaci") ||
+    (pathname.startsWith("/auth/") &&
+      new URLSearchParams(search).get("next")?.startsWith("/app/kandydaci"));
   const workspace = pathname.startsWith("/app") && person;
   const [menuAt, setMenuAt] = useState<string | null>(null);
   const main = useRef<HTMLElement>(null);
@@ -97,13 +154,15 @@ export function Shell() {
             <Link className="underline" to="/app/settings">
               Ustawienia danych
             </Link>
+            <SafeErrorReport kind="Błąd odczytu lub zapisu lokalnego scenariusza" />
           </Notice>
         )}
       </>
       {error && (
-        <p className="prototype-error" role="alert">
-          {error}
-        </p>
+        <div className="prototype-error" role="alert">
+          <p>{error}</p>
+          <SafeErrorReport kind="Błąd wykonania czynności" />
+        </div>
       )}
       <div key={`${state.activePersonId}:${pathname}`}>
         <Outlet />
@@ -111,7 +170,12 @@ export function Shell() {
     </>
   );
   return (
-    <div className="min-h-dvh bg-background text-foreground">
+    <div
+      className={cn(
+        "editorial-site min-h-dvh bg-background text-foreground",
+        editorialRoute && "editorial-employer",
+      )}
+    >
       <a
         href="#main"
         className="skip-link"

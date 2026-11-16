@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router";
+import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { CheckCircle2, FileText } from "lucide-react";
 import { ConfettiBurst, type ConfettiOrigin } from "@/components/confetti-burst";
 import { BackLink } from "@/components/back-link";
@@ -7,15 +7,19 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FormSelect } from "@/components/ui/form-select";
 import { JobCard } from "@/features/jobs/job-card";
 import { ApplicationOfferPreview } from "@/features/jobs/application-offer-preview";
 import { usePrototype } from "./store";
 import { currentPerson, publishedJobs, stageLabels, MIN_APPLICATION_ANSWER_LENGTH } from "./model";
-import { PageTitle, Empty, NotFound, Notice } from "./shell";
+import { PageTitle, Empty, NotFound, Notice, PrototypeDisclosure } from "./shell";
 import { CvAttachment } from "./cv-attachment";
 import { MatchScore } from "./match-score";
 import { RecruitingApplication } from "./recruiting-application";
 import { CandidateApplication } from "./candidate-application";
+import { EmployerShortlist } from "./employer-shortlist";
+import heroAllegory from "@/app/illustrations/hero-allegory.png";
+import employerAllegory from "@/app/illustrations/employer-allegory.png";
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -25,23 +29,28 @@ export function Field({ label, children }: { label: string; children: ReactNode 
     </label>
   );
 }
-export function PersonPicker() {
+export function PersonPicker({
+  requiredRole,
+}: {
+  requiredRole?: "candidate" | "employer" | "operator";
+}) {
   const { state, run } = usePrototype();
   const navigate = useNavigate();
+  const { pathname, search } = useLocation();
   const [params] = useSearchParams();
   const next = params.get("next");
   const audience = params.get("audience");
-  const people =
-    audience === "candidate" || audience === "employer"
-      ? state.people.filter((person) => person.role === audience)
-      : state.people;
+  const roleFilter =
+    requiredRole ?? (audience === "candidate" || audience === "employer" ? audience : null);
+  const people = roleFilter
+    ? state.people.filter((person) => person.role === roleFilter)
+    : state.people;
   const safeNext = next && /^\/(?!\/)/.test(next) && !next.startsWith("/auth") ? next : null;
+  const returnTo = requiredRole ? `${pathname}${search}` : null;
   return (
     <section className="prototype-section max-w-4xl">
       <h1>Wybierz osobę</h1>
-      <p className="mt-4 mb-8 text-muted-foreground">
-        Wybierz profil, z którego chcesz korzystać w prototypie. Hasło nie jest potrzebne.
-      </p>
+      <PrototypeDisclosure className="mt-4 mb-8" />
       <div className="grid gap-5 sm:grid-cols-2">
         {people.map((person) => (
           <article key={person.id} className="prototype-panel">
@@ -53,10 +62,10 @@ export function PersonPicker() {
                 run({ type: "select_person", id: person.id });
                 navigate(
                   person.role === "candidate"
-                    ? (safeNext ?? "/app")
+                    ? (safeNext ?? returnTo ?? "/app")
                     : person.role === "employer"
-                      ? "/app/oferty"
-                      : "/app/case",
+                      ? (safeNext ?? returnTo ?? "/app/oferty")
+                      : (safeNext ?? returnTo ?? "/app/case"),
                 );
               }}
             >
@@ -76,8 +85,9 @@ export function RequireRole({
   children: ReactNode;
 }) {
   const { state } = usePrototype();
+  const { pathname, search } = useLocation();
   const person = currentPerson(state);
-  if (!person) return <PersonPicker />;
+  if (!person) return <PersonPicker requiredRole={role} />;
   if (role && person.role !== role)
     return (
       <Empty>
@@ -86,7 +96,10 @@ export function RequireRole({
           {role === "candidate" ? "kandydata" : role === "employer" ? "pracodawcy" : "prowadzącego"}
           .
         </p>
-        <Link className={buttonVariants({ variant: "outline" })} to="/auth/sign-in">
+        <Link
+          className={buttonVariants({ variant: "outline" })}
+          to={`/auth/sign-in?audience=${role}&next=${encodeURIComponent(`${pathname}${search}`)}`}
+        >
           Zmień osobę
         </Link>
       </Empty>
@@ -104,6 +117,24 @@ export function WorkspaceHome() {
   return (
     <>
       <PageTitle>Witaj, {person.name.split(" ")[0]}</PageTitle>
+      <div className="editorial-workspace-lede">
+        <p>
+          {candidate
+            ? "Twoje oferty, aplikacje i następne kroki w jednym miejscu."
+            : "Oferty i zgłoszenia, które wymagają Twojej decyzji."}
+        </p>
+        <figure>
+          <img
+            src={candidate ? heroAllegory : employerAllegory}
+            alt={
+              candidate
+                ? "Współczesna alegoria AI: antyczna postać z wieńcem"
+                : "Współczesna alegoria AI: Talos, antyczny automat"
+            }
+          />
+          <figcaption>Ilustracja AI · współczesna alegoria</figcaption>
+        </figure>
+      </div>
       <div className="grid gap-5 sm:grid-cols-3">
         {[
           ["Aplikacje", applications.length],
@@ -414,29 +445,70 @@ export function ApplicationsPage({ employer = false }: { employer?: boolean }) {
   const { state } = usePrototype();
   const person = currentPerson(state)!;
   const [query, setQuery] = useState("");
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
+  const jobs = employer ? state.jobs.filter((job) => job.companyId === person.companyId) : [];
+  const mostRecentJobId = state.applications
+    .filter((application) => application.companyId === person.companyId)
+    .at(-1)?.jobId;
+  const selectedJobId =
+    jobs.find((job) => job.id === params.get("oferta"))?.id ?? mostRecentJobId ?? jobs[0]?.id;
+  const employerApplications = state.applications.filter(
+    (application) =>
+      application.companyId === person.companyId && application.jobId === selectedJobId,
+  );
   const applications = state.applications.filter(
     (x) =>
-      (employer ? x.companyId === person.companyId : x.candidateId === person.id) &&
+      (employer
+        ? x.companyId === person.companyId && x.jobId === selectedJobId
+        : x.candidateId === person.id) &&
       `${x.candidateName} ${x.jobTitle}`
         .toLocaleLowerCase("pl")
         .includes(query.toLocaleLowerCase("pl")),
   );
   return (
     <>
+      {employer && <p className="editorial-kicker">DO ROBOTY / STREFA PRACODAWCY / 03</p>}
       <PageTitle>{employer ? "Kandydaci" : "Moje aplikacje"}</PageTitle>
+      {employer && (
+        <p className="editorial-intro">
+          Ludzie za zgłoszeniami. <em>Decyzja należy do Ciebie.</em>
+        </p>
+      )}
       {params.has("wyslano") && (
         <Notice>
           <CheckCircle2 className="inline size-5" /> Aplikacja została wysłana.
         </Notice>
       )}
+      {employer && selectedJobId && (
+        <>
+          <div className="employer-job-choice">
+            <Field label="Oferta, dla której przeglądasz kandydatów">
+              <FormSelect
+                value={selectedJobId}
+                options={jobs.map((job) => ({ value: job.id, label: job.title }))}
+                onValueChange={(value) => {
+                  setParams({ oferta: value });
+                  setQuery("");
+                }}
+              />
+            </Field>
+          </div>
+          <EmployerShortlist applications={employerApplications} jobId={selectedJobId} />
+          <h2 className="all-applications-heading mt-10 mb-4" id="all-applications-title">
+            Wszystkie aplikacje do tej oferty ({employerApplications.length})
+          </h2>
+        </>
+      )}
       <Field label={employer ? "Szukaj kandydata lub oferty" : "Szukaj oferty"}>
         <Input value={query} onChange={(e) => setQuery(e.target.value)} />
       </Field>
-      <div className="mt-6 space-y-4">
+      <div className={employer ? "editorial-applications mt-6" : "mt-6 space-y-4"}>
         {applications.length ? (
           applications.map((a) => (
-            <article className="prototype-panel" key={a.id}>
+            <article
+              className={employer ? "prototype-panel editorial-application-row" : "prototype-panel"}
+              key={a.id}
+            >
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <Link
@@ -458,7 +530,14 @@ export function ApplicationsPage({ employer = false }: { employer?: boolean }) {
             </article>
           ))
         ) : (
-          <Empty>Brak aplikacji spełniających kryteria.</Empty>
+          <Empty>
+            Brak aplikacji spełniających kryteria.
+            {query && (
+              <Button variant="link" onClick={() => setQuery("")}>
+                Wyczyść wyszukiwanie
+              </Button>
+            )}
+          </Empty>
         )}
       </div>
     </>
