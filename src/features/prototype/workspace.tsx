@@ -18,6 +18,11 @@ import { MatchScore } from "./match-score";
 import { RecruitingApplication } from "./recruiting-application";
 import { CandidateApplication } from "./candidate-application";
 import { EmployerShortlist } from "./employer-shortlist";
+import {
+  SHORTLIST_VARIANT_KEY,
+  shortlistVariant,
+  type ShortlistVariant,
+} from "./shortlist-variant";
 import heroAllegory from "@/app/illustrations/hero-allegory.png";
 import employerAllegory from "@/app/illustrations/employer-allegory.png";
 
@@ -441,13 +446,6 @@ export function ApplyPage() {
     </section>
   );
 }
-const SHORTLIST_VARIANT_KEY = "doroboty.shortlist.prototype-variant";
-type ShortlistVariant = "A" | "B";
-
-function shortlistVariant(value: string | null): ShortlistVariant | null {
-  return value === "A" || value === "B" ? value : null;
-}
-
 function savedShortlistVariant(): ShortlistVariant {
   try {
     return shortlistVariant(window.sessionStorage.getItem(SHORTLIST_VARIANT_KEY)) ?? "B";
@@ -457,7 +455,7 @@ function savedShortlistVariant(): ShortlistVariant {
 }
 
 export function ApplicationsPage({ employer = false }: { employer?: boolean }) {
-  const { state } = usePrototype();
+  const { state, testVariant } = usePrototype();
   const person = currentPerson(state)!;
   const [query, setQuery] = useState("");
   const [params, setParams] = useSearchParams();
@@ -472,7 +470,7 @@ export function ApplicationsPage({ employer = false }: { employer?: boolean }) {
       // The explicit URL still controls this view when session storage is unavailable.
     }
   }, [employer, requestedVariant]);
-  const activeVariant = requestedVariant ?? storedVariant;
+  const activeVariant = requestedVariant ?? testVariant ?? storedVariant;
   const jobs = employer ? state.jobs.filter((job) => job.companyId === person.companyId) : [];
   const mostRecentJobId = state.applications
     .filter((application) => application.companyId === person.companyId)
