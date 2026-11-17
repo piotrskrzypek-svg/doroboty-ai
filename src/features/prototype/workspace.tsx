@@ -441,11 +441,38 @@ export function ApplyPage() {
     </section>
   );
 }
+const SHORTLIST_VARIANT_KEY = "doroboty.shortlist.prototype-variant";
+type ShortlistVariant = "A" | "B";
+
+function shortlistVariant(value: string | null): ShortlistVariant | null {
+  return value === "A" || value === "B" ? value : null;
+}
+
+function savedShortlistVariant(): ShortlistVariant {
+  try {
+    return shortlistVariant(window.sessionStorage.getItem(SHORTLIST_VARIANT_KEY)) ?? "B";
+  } catch {
+    return "B";
+  }
+}
+
 export function ApplicationsPage({ employer = false }: { employer?: boolean }) {
   const { state } = usePrototype();
   const person = currentPerson(state)!;
   const [query, setQuery] = useState("");
   const [params, setParams] = useSearchParams();
+  const requestedVariant = shortlistVariant(params.get("wariant"));
+  const [storedVariant, setStoredVariant] = useState(savedShortlistVariant);
+  useEffect(() => {
+    if (!employer || !requestedVariant) return;
+    setStoredVariant(requestedVariant);
+    try {
+      window.sessionStorage.setItem(SHORTLIST_VARIANT_KEY, requestedVariant);
+    } catch {
+      // The explicit URL still controls this view when session storage is unavailable.
+    }
+  }, [employer, requestedVariant]);
+  const activeVariant = requestedVariant ?? storedVariant;
   const jobs = employer ? state.jobs.filter((job) => job.companyId === person.companyId) : [];
   const mostRecentJobId = state.applications
     .filter((application) => application.companyId === person.companyId)
@@ -493,7 +520,9 @@ export function ApplicationsPage({ employer = false }: { employer?: boolean }) {
               />
             </Field>
           </div>
-          <EmployerShortlist applications={employerApplications} jobId={selectedJobId} />
+          {activeVariant === "B" && (
+            <EmployerShortlist applications={employerApplications} jobId={selectedJobId} />
+          )}
           <h2 className="all-applications-heading mt-10 mb-4" id="all-applications-title">
             Wszystkie aplikacje do tej oferty ({employerApplications.length})
           </h2>

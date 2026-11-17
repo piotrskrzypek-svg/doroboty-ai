@@ -188,6 +188,35 @@ test("fresh employer deep link selects the right persona and returns to candidat
   await expect(page).toHaveURL(/\/#\/app\/kandydaci$/);
   await expect(page.getByRole("heading", { name: "Kandydaci", exact: true })).toBeVisible();
 });
+test("shortlist prototype variants stay stable across navigation and can be replaced", async ({
+  page,
+}) => {
+  await page.goto("/#/app/kandydaci?wariant=A");
+  await page.getByRole("button", { name: "Wejdź jako Karolina Wiśniewska" }).click();
+  await expect(page).toHaveURL(/\/app\/kandydaci\?wariant=A$/);
+  const shortlist = page.getByRole("region", { name: "Kandydaci do rozmowy" });
+  await expect(shortlist).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Wszystkie aplikacje do tej oferty (3)" }),
+  ).toBeVisible();
+  await page.screenshot({ path: "artifacts/employer-variant-a-desktop.png", fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: "artifacts/employer-variant-a-mobile.png", fullPage: true });
+  await page.setViewportSize({ width: 320, height: 740 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.getByRole("link", { name: "Julia Mazur", exact: true }).click();
+  await page.locator(".record-breadcrumb").getByRole("link", { name: "Kandydaci" }).click();
+  await expect(shortlist).toHaveCount(0);
+  await page.goto("/#/app/kandydaci?oferta=20000000-0000-4000-8000-000000000004");
+  await expect(shortlist).toHaveCount(0);
+  await page.reload();
+  await expect(shortlist).toHaveCount(0);
+  await page.goto("/#/app/kandydaci?wariant=B");
+  await expect(shortlist.locator(".shortlist-card")).toHaveCount(2);
+  await page.reload();
+  await expect(shortlist.locator(".shortlist-card")).toHaveCount(2);
+});
 test("employer reviews a manual shortlist and keeps every application available", async ({
   page,
 }) => {
