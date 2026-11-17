@@ -91,4 +91,8 @@ Stable IDs are retained, including explicit removed entries. The legacy duplicat
 
 ## Current implementation limits
 
-No real login, email, binary upload, production CVs, provider AI, confidential roles, backend, collaboration across devices, cloud analytics or live experiment measurement. A static URL shares code, not local state; exported JSON contains the entire scenario. Human testing, publishing, CI results and course approval must be verified separately.
+No real login, email, binary upload, production CVs, provider AI, confidential roles, backend, collaboration across devices, live experiment measurement. A static URL shares code, not local state; exported JSON contains the entire scenario. Human testing, publishing, CI results and course approval must be verified separately.
+
+## Optional cloud analytics (SYS-12)
+
+When both VITE_POSTHOG_PROJECT_TOKEN and VITE_POSTHOG_HOST are supplied at build time, PostHog receives anonymous pageviews for initial load and hash-path navigation. Route templates exclude record IDs, slugs, queries and arbitrary paths; no form values or synthetic persona identification are sent. Autocapture, session recordings, surveys and automatic exceptions are disabled. Analytics uses memory-only IDs, so reloads are not unique-person measurement. Production without configuration sends no analytics; development reports missing keys without stopping the app. Sources: src/features/analytics/, src/main.tsx and src/features/prototype/app.tsx. Deployment and ingestion must be checked separately.

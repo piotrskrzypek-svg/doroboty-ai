@@ -39,3 +39,11 @@ npm run preview
 The static output is dist/. Browser checks require an already provisioned Playwright Chromium; starting the app never installs it. See [participant guide](docs/PARTICIPANT_GUIDE.md), [architecture](docs/architecture.md), [current features](FEATURES.md) and [case protocol](docs/case/CASE_PROTOCOL.md).
 
 To distribute a baseline participant package, run npm run package:participant -- /absolute/output/directory. This excludes Git history and instructor source material. Never distribute this repository’s history as a stage-safe packet.
+
+## Optional PostHog analytics
+
+Copy `.env.example` to `.env.local` and set `VITE_POSTHOG_PROJECT_TOKEN` and `VITE_POSTHOG_HOST` from your PostHog project settings. Use the public project token, never a personal API key. The owner uses EU project 355350 (Default project). Set the same variables in the hosting provider **before building**, then rebuild/redeploy; Vite embeds them at build time. No credentials or env files are included in participant packages. Without configuration the production app makes no analytics requests; development logs missing-variable errors without stopping the app.
+
+Only initial and hash-route pageviews are captured. Route templates omit local record IDs, slugs, queries and unknown paths. Filter changes alone do not count as new pageviews. Autocapture, session replay, surveys and automatic exception capture are disabled. Anonymous IDs are memory-only; selecting a shared synthetic persona does not identify a real participant. Do not interpret these counts as unique people across reloads.
+
+After deployment, open the site, navigate between pages and verify `$pageview` events and `route` in PostHog Activity. Local checks do not prove live ingestion. A first-party reverse proxy can improve delivery when ad blockers block the ingestion host: https://posthog.com/docs/advanced/proxy. SDK reference: https://posthog.com/docs/libraries/react-router/react-router-v7-declarative-mode.
