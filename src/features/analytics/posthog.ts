@@ -37,6 +37,7 @@ export function initializeAnalytics() {
         const route = event.properties.route;
         const { distinct_id, $device_id, $session_id, $lib, $lib_version } = event.properties;
         event.properties = {
+          token,
           distinct_id,
           $device_id,
           $session_id,
@@ -47,6 +48,8 @@ export function initializeAnalytics() {
           $process_person_profile: false,
           route,
         };
+        delete event.$set;
+        delete event.$set_once;
         return event;
       },
     });

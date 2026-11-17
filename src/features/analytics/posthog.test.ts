@@ -36,6 +36,7 @@ describe("optional PostHog setup", () => {
     ) => { properties: Record<string, unknown> } | null;
     const event = filter({
       event: "$pageview",
+      $set_once: { initial_url: "Private URL" },
       properties: {
         route: "/oferty/:slug",
         distinct_id: "random-id",
@@ -46,6 +47,7 @@ describe("optional PostHog setup", () => {
       },
     });
     expect(event?.properties.$current_url).toBe("https://example.invalid/#/oferty/:slug");
+    expect(event?.properties.token).toBe("phc_test");
     expect(event?.properties.distinct_id).toBe("random-id");
     expect(JSON.stringify(event)).not.toMatch(/private|Private|secret/);
     expect(filter({ event: "$autocapture", properties: {} })).toBeNull();
