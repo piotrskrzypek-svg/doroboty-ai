@@ -97,3 +97,15 @@ No real login, email, binary upload, production CVs, provider AI, confidential r
 ## Optional cloud analytics (SYS-12)
 
 When both VITE_POSTHOG_PROJECT_TOKEN and VITE_POSTHOG_HOST are supplied at build time, PostHog receives anonymous pageviews for initial load and hash-path navigation. Route templates exclude record IDs, slugs, queries and arbitrary paths; no form values or synthetic persona identification are sent. Autocapture captures click/change/submit interactions, with all text and element attributes masked, no input-value opt-ins, sanitized route templates, and only DOM tag/sibling structure retained. Session recordings, surveys and automatic exceptions remain disabled. Analytics uses memory-only IDs, so reloads are not unique-person measurement. Production without configuration sends no analytics; development reports missing keys without stopping the app. Sources: src/features/analytics/, src/main.tsx and src/features/prototype/app.tsx. Deployment and ingestion must be checked separately.
+
+## Optional shared recruitment pilot
+
+The `/#/pilot` route uses Supabase Auth and the pilot database when both Vite Supabase variables are configured. Test accounts can submit one synthetic answer per published job. The assigned recruiter can refresh and read those submissions from another browser. The candidate can confirm their own submission. The database enforces access independently of the browser.
+
+Recruiters see a submission count for each job and numbered, bordered cards separating individual answers.
+
+Candidates can create a Supabase account directly on /#/pilot using email and a matching password of at least eight characters. When email confirmation is required, the form instructs them to confirm and return to sign in. New accounts gain access through existing candidate ownership policies. Email delivery depends on the Supabase SMTP configuration.
+
+## Optional ESCO occupation suggestions
+
+In /#/app/oferty/nowa and employer job editing, the ESCO section searches live occupation profiles through /.netlify/functions/esco. Employers can search a Polish or English phrase, choose a Polish profile, review its description/source and select essential or optional skills. No exact AI-role match is promised: empty searches can retry without AI/seniority modifiers and disclose the effective query. The explicit append action adds standard material to the editable description; existing text and human publication approval are preserved. Profile metadata and selected skills persist with the browser-local job, including edit/reload and scenario import/export. This does not add Supabase-backed employer offers. Unavailable ESCO leaves the manual form usable. Netlify Functions is required for live suggestions; plain static hosting remains usable without suggestions. Sources: src/features/esco/, netlify/functions/esco.mts and src/features/prototype/employer.tsx.
