@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { createClient, type Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,11 +15,29 @@ type Job = { id: string; title: string; recruiter_id: string; published: boolean
 type Application = { id: string; job_id: string; candidate_id: string; answer: string };
 
 export function PilotPage() {
-  if (!client) return <p>Ten podgląd nie ma konfiguracji pilota.</p>;
-  return <Pilot client={client} />;
+  return (
+    <SupabaseAccess title="Pilot rekrutacji">
+      {(client, userId) => <PilotApplications client={client} key={userId} userId={userId} />}
+    </SupabaseAccess>
+  );
 }
 
-function Pilot({ client }: { client: PilotClient }) {
+type AccessProps = {
+  title: string;
+  employer?: boolean;
+  children: (client: PilotClient, userId: string) => ReactNode;
+};
+export function SupabaseAccess(props: AccessProps) {
+  if (!client) return <p>Ten podgląd nie ma konfiguracji połączenia z bazą.</p>;
+  return <Pilot client={client} {...props} />;
+}
+
+function Pilot({
+  client,
+  title,
+  employer = false,
+  children,
+}: AccessProps & { client: PilotClient }) {
   const [session, setSession] = useState<Session | null | undefined>();
   const [busy, setBusy] = useState(false);
   const [registering, setRegistering] = useState(false);
@@ -79,7 +97,7 @@ function Pilot({ client }: { client: PilotClient }) {
 
   return (
     <div className="space-y-5">
-      <PageTitle>Pilot rekrutacji</PageTitle>
+      <PageTitle>{title}</PageTitle>
       <p>Do testów używaj wyłącznie fikcyjnych ofert i zgłoszeń.</p>
       {session === undefined ? (
         <p role="status">Sprawdzam logowanie…</p>
@@ -99,12 +117,16 @@ function Pilot({ client }: { client: PilotClient }) {
           >
             Wyloguj się
           </Button>
-          <PilotApplications client={client} key={session.user.id} userId={session.user.id} />
+          <div key={session.user.id}>{children(client, session.user.id)}</div>
         </>
       ) : (
         <form className="prototype-panel max-w-lg space-y-4" onSubmit={signIn}>
           <h2 className="text-xl font-bold">
-            {registering ? "Utwórz konto kandydata" : "Zaloguj się"}
+            {registering
+              ? "Utwórz konto kandydata"
+              : employer
+                ? "Zaloguj się kontem pracodawcy"
+                : "Zaloguj się"}
           </h2>
           {notice && <p role="status">{notice}</p>}
           <Field label="E-mail">
@@ -134,18 +156,20 @@ function Pilot({ client }: { client: PilotClient }) {
           <Button disabled={busy} type="submit">
             {busy ? "Proszę czekać…" : registering ? "Utwórz konto" : "Zaloguj się"}
           </Button>
-          <Button
-            disabled={busy}
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setRegistering((value) => !value);
-              setError("");
-              setNotice("");
-            }}
-          >
-            {registering ? "Mam już konto — zaloguj się" : "Nowy kandydat — utwórz konto"}
-          </Button>
+          {!employer && (
+            <Button
+              disabled={busy}
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setRegistering((value) => !value);
+                setError("");
+                setNotice("");
+              }}
+            >
+              {registering ? "Mam już konto — zaloguj się" : "Nowy kandydat — utwórz konto"}
+            </Button>
+          )}
         </form>
       )}
       {error && <p role="alert">{error}</p>}

@@ -1,3 +1,4 @@
+import { CloudOffersPage } from "../cloud-offers/page";
 import { PilotPage } from "../pilot/page";
 import { HashRouter, Routes, Route, Navigate } from "react-router";
 import { AnalyticsPageviews } from "../analytics/pageviews";
@@ -24,6 +25,8 @@ function AppRoutes() {
     <Routes>
       <Route element={<Shell />}>
         <Route path="pilot" element={<PilotPage />} />
+        <Route path="pracodawca/oferty" element={<CloudOffersPage />} />
+        <Route path="pracodawca/oferty/:id" element={<CloudOffersPage />} />
         <Route index element={<HomePage />} />
         <Route path="oferty" element={<JobsPage />} />
         <Route path="oferty/:slug" element={<JobPage />} />
