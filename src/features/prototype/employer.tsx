@@ -1,4 +1,6 @@
 import { useState, type FormEvent } from "react";
+import { OccupationAssistant } from "../esco/occupation-assistant";
+import type { EscoProfile } from "../esco/contracts";
 import { Link, useNavigate, useParams } from "react-router";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,6 +73,7 @@ export function EmployerJobEditor() {
   const person = currentPerson(state)!;
   const navigate = useNavigate();
   const existing = state.jobs.find((x) => x.id === id && x.companyId === person.companyId);
+  const [escoProfile, setEscoProfile] = useState<EscoProfile | undefined>(existing?.escoProfile);
   const [title, setTitle] = useState(existing?.title ?? "");
   const [summary, setSummary] = useState(existing?.summary ?? "");
   const [description, setDescription] = useState(existing?.description ?? "");
@@ -97,6 +100,7 @@ export function EmployerJobEditor() {
       description,
       sourceBrief: source,
       generatedDescription: generated,
+      escoProfile,
       category: data.get("category"),
       function: data.get("function"),
       remoteStatus: data.get("remoteStatus"),
@@ -150,6 +154,21 @@ export function EmployerJobEditor() {
             }}
           />
         </Field>
+        <OccupationAssistant
+          title={title}
+          value={escoProfile}
+          onChange={(profile) => {
+            setEscoProfile(profile);
+            setApproved(false);
+          }}
+          onAppend={(text) => {
+            const next = [description.trim(), text].filter(Boolean).join("\n\n");
+            if (next.length > 12000) return false;
+            setDescription(next);
+            setApproved(false);
+            return true;
+          }}
+        />
         <Field label="Brief — kogo szukasz i do jakiego zadania?">
           <Textarea
             maxLength={12000}

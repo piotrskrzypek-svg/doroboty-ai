@@ -105,3 +105,7 @@ The `/#/pilot` route uses Supabase Auth and the pilot database when both Vite Su
 Recruiters see a submission count for each job and numbered, bordered cards separating individual answers.
 
 Candidates can create a Supabase account directly on /#/pilot using email and a matching password of at least eight characters. When email confirmation is required, the form instructs them to confirm and return to sign in. New accounts gain access through existing candidate ownership policies. Email delivery depends on the Supabase SMTP configuration.
+
+## Optional ESCO occupation suggestions
+
+In /#/app/oferty/nowa and employer job editing, the ESCO section searches live occupation profiles through /.netlify/functions/esco. Employers can search a Polish or English phrase, choose a Polish profile, review its description/source and select essential or optional skills. No exact AI-role match is promised: empty searches can retry without AI/seniority modifiers and disclose the effective query. The explicit append action adds standard material to the editable description; existing text and human publication approval are preserved. Profile metadata and selected skills persist with the browser-local job, including edit/reload and scenario import/export. This does not add Supabase-backed employer offers. Unavailable ESCO leaves the manual form usable. Netlify Functions is required for live suggestions; plain static hosting remains usable without suggestions. Sources: src/features/esco/, netlify/functions/esco.mts and src/features/prototype/employer.tsx.
