@@ -97,3 +97,7 @@ No real login, email, binary upload, production CVs, provider AI, confidential r
 ## Optional cloud analytics (SYS-12)
 
 When both VITE_POSTHOG_PROJECT_TOKEN and VITE_POSTHOG_HOST are supplied at build time, PostHog receives anonymous pageviews for initial load and hash-path navigation. Route templates exclude record IDs, slugs, queries and arbitrary paths; no form values or synthetic persona identification are sent. Autocapture captures click/change/submit interactions, with all text and element attributes masked, no input-value opt-ins, sanitized route templates, and only DOM tag/sibling structure retained. Session recordings, surveys and automatic exceptions remain disabled. Analytics uses memory-only IDs, so reloads are not unique-person measurement. Production without configuration sends no analytics; development reports missing keys without stopping the app. Sources: src/features/analytics/, src/main.tsx and src/features/prototype/app.tsx. Deployment and ingestion must be checked separately.
+
+## Optional shared recruitment pilot
+
+The `/#/pilot` route uses Supabase Auth and the pilot database when both Vite Supabase variables are configured. Test accounts can submit one synthetic answer per published job. The assigned recruiter can refresh and read those submissions from another browser. The candidate can confirm their own submission. The database enforces access independently of the browser.
