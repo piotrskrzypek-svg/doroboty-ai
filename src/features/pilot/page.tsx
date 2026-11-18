@@ -22,6 +22,8 @@ export function PilotPage() {
 function Pilot({ client }: { client: PilotClient }) {
   const [session, setSession] = useState<Session | null | undefined>();
   const [busy, setBusy] = useState(false);
+  const [registering, setRegistering] = useState(false);
+  const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -37,13 +39,37 @@ function Pilot({ client }: { client: PilotClient }) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     setError("");
+    setNotice("");
+    const email = String(form.get("email")).trim();
+    const password = String(form.get("password"));
+    if (registering && password !== String(form.get("passwordConfirmation"))) {
+      setError("Hasła muszą być takie same.");
+      return;
+    }
     setBusy(true);
     try {
+      if (registering) {
+        const { data, error } = await client.auth.signUp({ email, password });
+        if (error) {
+          setError(
+            error.code === "over_email_send_rate_limit"
+              ? "Limit wiadomości został osiągnięty. Spróbuj ponownie później."
+              : "Nie udało się utworzyć konta. Sprawdź adres i wymagania hasła lub spróbuj później.",
+          );
+        } else if (!data.session) {
+          setNotice(
+            "Sprawdź skrzynkę e-mail i potwierdź adres linkiem w wiadomości. Potem wróć na tę stronę i zaloguj się.",
+          );
+          setRegistering(false);
+        }
+        return;
+      }
       const { error } = await client.auth.signInWithPassword({
         email: String(form.get("email")),
         password: String(form.get("password")),
       });
-      if (error) setError("Logowanie nie powiodło się. Sprawdź dane konta testowego.");
+      if (error)
+        setError("Logowanie nie powiodło się. Sprawdź dane konta i potwierdzenie adresu e-mail.");
     } catch {
       setError("Nie udało się połączyć z usługą logowania.");
     } finally {
@@ -77,14 +103,48 @@ function Pilot({ client }: { client: PilotClient }) {
         </>
       ) : (
         <form className="prototype-panel max-w-lg space-y-4" onSubmit={signIn}>
-          <Field label="E-mail konta testowego">
+          <h2 className="text-xl font-bold">
+            {registering ? "Utwórz konto kandydata" : "Zaloguj się"}
+          </h2>
+          {notice && <p role="status">{notice}</p>}
+          <Field label="E-mail">
             <Input name="email" type="email" autoComplete="username" required />
           </Field>
           <Field label="Hasło">
-            <Input name="password" type="password" autoComplete="current-password" required />
+            <Input
+              name="password"
+              type="password"
+              autoComplete={registering ? "new-password" : "current-password"}
+              minLength={registering ? 8 : undefined}
+              required
+            />
+            {registering && <p>Użyj co najmniej 8 znaków.</p>}
           </Field>
+          {registering && (
+            <Field label="Powtórz hasło">
+              <Input
+                name="passwordConfirmation"
+                type="password"
+                autoComplete="new-password"
+                minLength={8}
+                required
+              />
+            </Field>
+          )}
           <Button disabled={busy} type="submit">
-            Zaloguj się
+            {busy ? "Proszę czekać…" : registering ? "Utwórz konto" : "Zaloguj się"}
+          </Button>
+          <Button
+            disabled={busy}
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setRegistering((value) => !value);
+              setError("");
+              setNotice("");
+            }}
+          >
+            {registering ? "Mam już konto — zaloguj się" : "Nowy kandydat — utwórz konto"}
           </Button>
         </form>
       )}
