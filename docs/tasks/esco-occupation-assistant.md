@@ -17,3 +17,5 @@ Local frontend: npm run dev; live backend: netlify dev (Netlify CLI) or Deploy P
 ## Validation and review
 
 40 unit tests passed (including six ESCO boundary/persistence checks); TypeScript, focused lint and Vite build passed. A bundled function smoke test against the real ESCO service returned one Polish occupation and 25 related skills for AI Product Manager. Reviewed fixed upstream destination/URI validation, stale-request cancellation, manual approval, optional metadata compatibility and text-length handling. Full ./scripts/verify encountered the existing docs/production-readiness.html formatting issue; changed files are checked separately. Browser acceptance and live Netlify function checks are recorded after deployment.
+
+The review branch includes the pending pilot changes from PR #3 and targets main to obtain a Netlify Deploy Preview. No production merge is performed.
