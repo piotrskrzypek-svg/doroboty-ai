@@ -102,4 +102,6 @@ When both VITE_POSTHOG_PROJECT_TOKEN and VITE_POSTHOG_HOST are supplied at build
 
 The `/#/pilot` route uses Supabase Auth and the pilot database when both Vite Supabase variables are configured. Test accounts can submit one synthetic answer per published job. The assigned recruiter can refresh and read those submissions from another browser. The candidate can confirm their own submission. The database enforces access independently of the browser.
 
+Recruiters see a submission count for each job and numbered, bordered cards separating individual answers.
+
 Candidates can create a Supabase account directly on /#/pilot using email and a matching password of at least eight characters. When email confirmation is required, the form instructs them to confirm and return to sign in. New accounts gain access through existing candidate ownership policies. Email delivery depends on the Supabase SMTP configuration.

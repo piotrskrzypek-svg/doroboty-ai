@@ -234,13 +234,15 @@ function PilotApplications({ client, userId }: { client: PilotClient; userId: st
             <h2 className="text-xl font-bold">{job.title}</h2>
             {job.recruiter_id === userId ? (
               <>
+                <h3 className="text-lg font-bold">Zgłoszenia: {entries.length}</h3>
                 {entries.length === 0 ? (
                   <p>Brak zgłoszeń.</p>
                 ) : (
                   <ul className="space-y-3">
-                    {entries.map((entry) => (
-                      <li className="break-words whitespace-pre-wrap" key={entry.id}>
-                        {entry.answer}
+                    {entries.map((entry, index) => (
+                      <li className="border border-current p-4" key={entry.id}>
+                        <h4 className="mb-3 font-bold">Zgłoszenie {index + 1}</h4>
+                        <p className="break-words whitespace-pre-wrap">{entry.answer}</p>
                       </li>
                     ))}
                   </ul>
