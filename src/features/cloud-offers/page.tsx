@@ -9,13 +9,27 @@ import { offerRowSchema, type OfferRow } from "./contracts";
 import { saveCloudOffer } from "./repository";
 
 export function CloudOffersPage() {
+  const [params] = useSearchParams();
+  const role = params.get("role") === "hiring_manager" ? "hiring_manager" : "recruiter";
   return (
-    <SupabaseAccess title="Twoje oferty w bazie" employer>
-      {(client, userId) => <CloudOffers key={userId} client={client} userId={userId} />}
+    <SupabaseAccess
+      title={role === "hiring_manager" ? "Oferty — Hiring manager" : "Oferty — Rekruter"}
+      employer
+      role={role}
+    >
+      {(client, userId) => <CloudOffers key={userId} client={client} userId={userId} role={role} />}
     </SupabaseAccess>
   );
 }
-function CloudOffers({ client, userId }: { client: SupabaseClient; userId: string }) {
+function CloudOffers({
+  client,
+  userId,
+  role,
+}: {
+  client: SupabaseClient;
+  userId: string;
+  role: string;
+}) {
   const { id } = useParams();
   const [search] = useSearchParams();
   const navigate = useNavigate();
@@ -74,12 +88,15 @@ function CloudOffers({ client, userId }: { client: SupabaseClient; userId: strin
       </p>
       <div className="flex flex-wrap gap-3">
         {id ? (
-          <Link className={buttonVariants({ variant: "outline" })} to="/pracodawca/oferty">
+          <Link
+            className={buttonVariants({ variant: "outline" })}
+            to={`/pracodawca/oferty?role=${role}`}
+          >
             Wróć do zapisanych ofert
           </Link>
         ) : (
           allowed && (
-            <Link className={buttonVariants()} to="/pracodawca/oferty/nowa">
+            <Link className={buttonVariants()} to={`/pracodawca/oferty/nowa?role=${role}`}>
               Dodaj ofertę do bazy
             </Link>
           )
@@ -108,7 +125,7 @@ function CloudOffers({ client, userId }: { client: SupabaseClient; userId: strin
             existing={existing?.data}
             onSave={async (data) => {
               await saveCloudOffer(client, data, existing?.revision);
-              navigate("/pracodawca/oferty?zapisano=1");
+              navigate(`/pracodawca/oferty?zapisano=1&role=${role}`);
             }}
           />
         )
@@ -131,7 +148,7 @@ function CloudOffers({ client, userId }: { client: SupabaseClient; userId: strin
                 )}
                 <Link
                   className={buttonVariants({ variant: "outline" })}
-                  to={`/pracodawca/oferty/${row.id}`}
+                  to={`/pracodawca/oferty/${row.id}?role=${role}`}
                 >
                   Edytuj ofertę „{row.data.title}”
                 </Link>

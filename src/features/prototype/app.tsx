@@ -25,6 +25,7 @@ function AppRoutes() {
     <Routes>
       <Route element={<Shell />}>
         <Route path="pilot" element={<PilotPage />} />
+        <Route path="konto" element={<PilotPage />} />
         <Route path="pracodawca/oferty" element={<CloudOffersPage />} />
         <Route path="pracodawca/oferty/:id" element={<CloudOffersPage />} />
         <Route index element={<HomePage />} />

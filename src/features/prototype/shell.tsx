@@ -18,6 +18,8 @@ import { BrandMark } from "@/features/public/brand-mark";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { currentPerson } from "./model";
 import { usePrototype } from "./store";
+import { useCloudSession } from "../auth/session";
+import { accountRoute, preferredRole } from "../auth/roles";
 import { cn } from "@/lib/utils";
 const navigation = [
   { to: "/oferty", label: "Oferty" },
@@ -122,6 +124,7 @@ const employerNav = [
 export function Shell() {
   const { state, issue, error, clearError } = usePrototype();
   const person = currentPerson(state);
+  const session = useCloudSession();
   const { pathname, search } = useLocation();
   const editorialRoute =
     pathname.startsWith("/app/kandydaci") ||
@@ -246,13 +249,14 @@ export function Shell() {
                 Wszystkie oferty
               </Link>
               <Link className="nav-link" to="/auth/sign-in">
-                Zmień osobę
+                Zmień rolę / konto
               </Link>
             </nav>
           </aside>
           <div className="workspace">
             <div className="topbar">
               <span>
+                Demo ·{" "}
                 {person.role === "candidate"
                   ? "Strefa kandydata"
                   : person.role === "employer"
@@ -288,9 +292,9 @@ export function Shell() {
                     {item.label}
                   </Link>
                 ))}
-                {person ? (
+                {person || session ? (
                   <div className="flex items-center gap-[var(--gui-space-xs)] sm:gap-[var(--gui-space-m)]">
-                    {person.role === "candidate" && (
+                    {!session && person?.role === "candidate" && (
                       <>
                         <Link
                           className="hidden text-sm font-medium text-muted-foreground md:inline"
@@ -307,13 +311,13 @@ export function Shell() {
                       </>
                     )}
                     <Link
-                      to="/app"
+                      to={session ? accountRoute(preferredRole()) : "/app"}
                       className={cn(
                         buttonVariants({ variant: "outline", size: "lg" }),
                         "text-sm font-medium max-sm:min-h-10 max-sm:px-[var(--gui-space-xs)] max-sm:text-sm",
                       )}
                     >
-                      Moje konto
+                      {session ? "Moje konto" : "Panel demo"}
                     </Link>
                     <Link
                       className={cn(
@@ -330,13 +334,13 @@ export function Shell() {
                 ) : (
                   <>
                     <Link
-                      to="/auth/sign-in?audience=candidate"
+                      to="/auth/sign-in"
                       className={cn(
                         buttonVariants({ variant: "outline", size: "lg" }),
                         "text-sm font-medium max-sm:min-h-10 max-sm:px-[var(--gui-space-xs)] max-sm:text-sm",
                       )}
                     >
-                      Wybierz osobę
+                      Zaloguj się / Testuj
                     </Link>
                   </>
                 )}
