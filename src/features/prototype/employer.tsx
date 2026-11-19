@@ -1,4 +1,6 @@
 import { useState, type FormEvent } from "react";
+import { OccupationAssistant } from "../esco/occupation-assistant";
+import type { EscoProfile } from "../esco/contracts";
 import { Link, useNavigate, useParams } from "react-router";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +14,7 @@ import {
   seniorityLabels,
   contractLabels,
 } from "@/features/jobs/presentation";
-import { currentPerson, jobSchema } from "./model";
+import { currentPerson, jobSchema, type State } from "./model";
 import { usePrototype } from "./store";
 import { Field } from "./workspace";
 import { Empty, NotFound, PageTitle } from "./shell";
@@ -71,6 +73,31 @@ export function EmployerJobEditor() {
   const person = currentPerson(state)!;
   const navigate = useNavigate();
   const existing = state.jobs.find((x) => x.id === id && x.companyId === person.companyId);
+  if (id !== "nowa" && !existing) return <NotFound />;
+  return (
+    <JobEditorForm
+      key={id}
+      existing={existing}
+      companyId={person.companyId!}
+      onSave={(job) => {
+        if (run({ type: "publish", job })) navigate("/app/oferty");
+      }}
+    />
+  );
+}
+
+export function JobEditorForm({
+  existing,
+  companyId,
+  onSave,
+  cloud = false,
+}: {
+  existing?: State["jobs"][number];
+  companyId: string;
+  onSave: (job: State["jobs"][number]) => void | Promise<void>;
+  cloud?: boolean;
+}) {
+  const [escoProfile, setEscoProfile] = useState<EscoProfile | undefined>(existing?.escoProfile);
   const [title, setTitle] = useState(existing?.title ?? "");
   const [summary, setSummary] = useState(existing?.summary ?? "");
   const [description, setDescription] = useState(existing?.description ?? "");
@@ -78,25 +105,26 @@ export function EmployerJobEditor() {
   const [generated, setGenerated] = useState(existing?.generatedDescription ?? "");
   const [approved, setApproved] = useState(false);
   const [error, setError] = useState("");
-  if (id !== "nowa" && !existing) return <NotFound />;
-  function publish(e: FormEvent<HTMLFormElement>) {
+  const [saving, setSaving] = useState(false);
+  const [newId] = useState(() => existing?.id ?? crypto.randomUUID());
+  async function publish(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
     if (!approved) {
-      setError("Zatwierdź opis przed publikacją.");
+      setError(cloud ? "Zatwierdź treść przed zapisem." : "Zatwierdź opis przed publikacją.");
       return;
     }
     const data = new FormData(e.currentTarget);
-    const newId = existing?.id ?? crypto.randomUUID();
     const parsed = jobSchema.safeParse({
       id: newId,
       slug: existing?.slug ?? `oferta-${newId}`,
-      companyId: person.companyId,
+      companyId,
       title,
       summary,
       description,
       sourceBrief: source,
       generatedDescription: generated,
+      escoProfile,
       category: data.get("category"),
       function: data.get("function"),
       remoteStatus: data.get("remoteStatus"),
@@ -117,10 +145,10 @@ export function EmployerJobEditor() {
           poznań: { latitude: 52.4064, longitude: 16.9252 },
         } as Record<string, { latitude: number; longitude: number }>
       )[String(data.get("location")).trim().toLocaleLowerCase("pl")],
-      publicationStatus: "published",
+      publicationStatus: cloud ? "draft" : "published",
       publishedAt: existing?.publishedAt ?? new Date().toISOString(),
       expiryAt: existing?.expiryAt ?? "2099-12-31T23:59:59.000Z",
-      verificationStatus: "employer_verified",
+      verificationStatus: cloud ? "unverified" : "employer_verified",
     });
     if (
       !parsed.success ||
@@ -133,141 +161,180 @@ export function EmployerJobEditor() {
       );
       return;
     }
-    if (run({ type: "publish", job: parsed.data })) navigate("/app/oferty");
+    setSaving(true);
+    try {
+      await onSave(parsed.data);
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Nie udało się zapisać oferty. Spróbuj ponownie.",
+      );
+    } finally {
+      setSaving(false);
+    }
   }
   return (
     <>
-      <PageTitle>{existing ? "Edytuj ofertę" : "Nowa oferta"}</PageTitle>
-      <form className="prototype-form" onSubmit={publish}>
-        <Field label="Nazwa stanowiska">
-          <Input
-            required
-            maxLength={200}
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
+      {cloud ? (
+        <h2>{existing ? "Edytuj zapisaną ofertę" : "Nowa oferta do zapisu"}</h2>
+      ) : (
+        <PageTitle>{existing ? "Edytuj ofertę" : "Nowa oferta"}</PageTitle>
+      )}
+      {!cloud && (
+        <Link className="underline" to="/pracodawca/oferty">
+          Przejdź do ofert zapisywanych w bazie
+        </Link>
+      )}
+      <form onSubmit={(event) => void publish(event)}>
+        <fieldset disabled={saving} className="prototype-form min-w-0">
+          <Field label="Nazwa stanowiska">
+            <Input
+              required
+              maxLength={200}
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                setApproved(false);
+              }}
+            />
+          </Field>
+          <OccupationAssistant
+            title={title}
+            value={escoProfile}
+            onChange={(profile) => {
+              setEscoProfile(profile);
               setApproved(false);
+            }}
+            onAppend={(text) => {
+              const next = [description.trim(), text].filter(Boolean).join("\n\n");
+              if (next.length > 12000) return false;
+              setDescription(next);
+              setApproved(false);
+              return true;
             }}
           />
-        </Field>
-        <Field label="Brief — kogo szukasz i do jakiego zadania?">
-          <Textarea
-            maxLength={12000}
-            value={source}
-            onChange={(e) => {
-              setSource(e.target.value);
-              setGenerated("");
-              setApproved(false);
-            }}
-          />
-        </Field>
-        <div>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={source.trim().length < 20 || title.trim().length < 3}
-            onClick={() => {
-              setGenerated(
-                `${title}\n\nO roli\n${source.trim().slice(0, 10000)}\n\nJak pracujemy\nŁączymy potrzeby użytkowników, odpowiedzialne wykorzystanie AI i mierzalne efekty.\n\nProces rekrutacji\nPrześlij aplikację i opowiedz o projekcie, w którym Twoje decyzje wpłynęły na wynik.`,
-              );
-              setApproved(false);
-            }}
-          >
-            Przygotuj opis z AI
-          </Button>
-        </div>
-        {generated && (
-          <section className="prototype-panel">
-            <h2 className="mb-4">Propozycja opisu</h2>
-            <p className="whitespace-pre-wrap">{generated}</p>
+          <Field label="Brief — kogo szukasz i do jakiego zadania?">
+            <Textarea
+              maxLength={12000}
+              value={source}
+              onChange={(e) => {
+                setSource(e.target.value);
+                setGenerated("");
+                setApproved(false);
+              }}
+            />
+          </Field>
+          <div>
             <Button
               type="button"
               variant="outline"
-              className="mt-5"
+              disabled={source.trim().length < 20 || title.trim().length < 3}
               onClick={() => {
-                setDescription(generated);
-                if (!summary) setSummary(source.slice(0, 180));
+                setGenerated(
+                  `${title}\n\nO roli\n${source.trim().slice(0, 10000)}\n\nJak pracujemy\nŁączymy potrzeby użytkowników, odpowiedzialne wykorzystanie AI i mierzalne efekty.\n\nProces rekrutacji\nPrześlij aplikację i opowiedz o projekcie, w którym Twoje decyzje wpłynęły na wynik.`,
+                );
                 setApproved(false);
               }}
             >
-              Użyj propozycji
+              Przygotuj opis z AI
             </Button>
-          </section>
-        )}
-        <Field label="Krótkie podsumowanie">
-          <Textarea
-            required
-            minLength={10}
-            maxLength={12000}
-            value={summary}
-            onChange={(e) => {
-              setSummary(e.target.value);
-              setApproved(false);
-            }}
-          />
-        </Field>
-        <Field label="Opis oferty">
-          <Textarea
-            required
-            minLength={30}
-            maxLength={12000}
-            value={description}
-            onChange={(e) => {
-              setDescription(e.target.value);
-              setApproved(false);
-            }}
-          />
-        </Field>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {(
-            [
-              ["category", "Kategoria", categoryLabels, existing?.category ?? "build"],
-              ["function", "Funkcja", functionLabels, existing?.function ?? "engineering"],
-              ["remoteStatus", "Tryb pracy", remoteLabels, existing?.remoteStatus ?? "hybrid"],
-              ["seniority", "Poziom", seniorityLabels, existing?.seniority ?? "mid"],
-              ["contract", "Umowa", contractLabels, existing?.contract ?? "employment"],
-            ] as const
-          ).map(([name, label, values, value]) => (
-            <Field key={name} label={label}>
-              <FormSelect
-                name={name}
-                ariaLabel={label}
-                defaultValue={value}
-                options={Object.entries(values).map(([value, label]) => ({ value, label }))}
-              />
-            </Field>
-          ))}
-          <Field label="Lokalizacja">
-            <Input
-              name="location"
+          </div>
+          {generated && (
+            <section className="prototype-panel">
+              <h2 className="mb-4">Propozycja opisu</h2>
+              <p className="whitespace-pre-wrap">{generated}</p>
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-5"
+                onClick={() => {
+                  setDescription(generated);
+                  if (!summary) setSummary(source.slice(0, 180));
+                  setApproved(false);
+                }}
+              >
+                Użyj propozycji
+              </Button>
+            </section>
+          )}
+          <Field label="Krótkie podsumowanie">
+            <Textarea
               required
-              maxLength={200}
-              defaultValue={existing?.locations.join(" / ") ?? "Warszawa"}
+              minLength={10}
+              maxLength={12000}
+              value={summary}
+              onChange={(e) => {
+                setSummary(e.target.value);
+                setApproved(false);
+              }}
             />
           </Field>
-          <Field label="Wynagrodzenie od (PLN brutto / mies.)">
-            <Input name="salaryMin" type="number" min="0" defaultValue={existing?.salaryMin} />
+          <Field label="Opis oferty">
+            <Textarea
+              required
+              minLength={30}
+              maxLength={12000}
+              value={description}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                setApproved(false);
+              }}
+            />
           </Field>
-          <Field label="Wynagrodzenie do (PLN brutto / mies.)">
-            <Input name="salaryMax" type="number" min="0" defaultValue={existing?.salaryMax} />
-          </Field>
-        </div>
-        <label className="flex items-start gap-3">
-          <Checkbox
-            checked={approved}
-            onCheckedChange={setApproved}
-            aria-label="Zatwierdzam treść oferty"
-          />
-          <span>Zatwierdzam treść oferty do publikacji.</span>
-        </label>
-        {error && (
-          <p role="alert" className="error-message">
-            {error}
-          </p>
-        )}
-        <Button type="submit" disabled={!approved}>
-          Opublikuj ofertę
-        </Button>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {(
+              [
+                ["category", "Kategoria", categoryLabels, existing?.category ?? "build"],
+                ["function", "Funkcja", functionLabels, existing?.function ?? "engineering"],
+                ["remoteStatus", "Tryb pracy", remoteLabels, existing?.remoteStatus ?? "hybrid"],
+                ["seniority", "Poziom", seniorityLabels, existing?.seniority ?? "mid"],
+                ["contract", "Umowa", contractLabels, existing?.contract ?? "employment"],
+              ] as const
+            ).map(([name, label, values, value]) => (
+              <Field key={name} label={label}>
+                <FormSelect
+                  name={name}
+                  ariaLabel={label}
+                  defaultValue={value}
+                  options={Object.entries(values).map(([value, label]) => ({ value, label }))}
+                />
+              </Field>
+            ))}
+            <Field label="Lokalizacja">
+              <Input
+                name="location"
+                required
+                maxLength={200}
+                defaultValue={existing?.locations.join(" / ") ?? "Warszawa"}
+              />
+            </Field>
+            <Field label="Wynagrodzenie od (PLN brutto / mies.)">
+              <Input name="salaryMin" type="number" min="0" defaultValue={existing?.salaryMin} />
+            </Field>
+            <Field label="Wynagrodzenie do (PLN brutto / mies.)">
+              <Input name="salaryMax" type="number" min="0" defaultValue={existing?.salaryMax} />
+            </Field>
+          </div>
+          <label className="flex items-start gap-3">
+            <Checkbox
+              checked={approved}
+              onCheckedChange={setApproved}
+              aria-label={cloud ? "Zatwierdzam treść oferty do zapisu" : "Zatwierdzam treść oferty"}
+            />
+            <span>
+              {cloud
+                ? "Zatwierdzam treść oferty do zapisu."
+                : "Zatwierdzam treść oferty do publikacji."}
+            </span>
+          </label>
+          {error && (
+            <p role="alert" className="error-message">
+              {error}
+            </p>
+          )}
+          <Button type="submit" disabled={!approved}>
+            {saving ? "Zapisuję…" : cloud ? "Zapisz ofertę w bazie" : "Opublikuj ofertę"}
+          </Button>
+        </fieldset>
       </form>
     </>
   );

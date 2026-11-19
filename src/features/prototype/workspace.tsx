@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
+import { AccountPanel } from "../auth/account-panel";
+import { cloudClient } from "../auth/client";
+import {
+  accessRole,
+  accessRoles,
+  accessRoleLabels,
+  accountRoute,
+  demoRole,
+  rememberRole,
+} from "../auth/roles";
 import { CheckCircle2, FileText } from "lucide-react";
 import { ConfettiBurst, type ConfettiOrigin } from "@/components/confetti-burst";
 import { BackLink } from "@/components/back-link";
@@ -45,17 +55,61 @@ export function PersonPicker({
   const [params] = useSearchParams();
   const next = params.get("next");
   const audience = params.get("audience");
-  const roleFilter =
-    requiredRole ?? (audience === "candidate" || audience === "employer" ? audience : null);
-  const people = roleFilter
-    ? state.people.filter((person) => person.role === roleFilter)
-    : state.people;
+  const role = accessRole(
+    params.get("role") ??
+      (requiredRole === "employer" || audience === "employer" ? "recruiter" : "candidate"),
+  );
+  const operator = requiredRole === "operator" || audience === "operator";
+  const people = state.people.filter((person) =>
+    operator ? person.role === "operator" : demoRole(person) === role,
+  );
+  const [entryError, setEntryError] = useState("");
+  const [entering, setEntering] = useState(false);
   const safeNext = next && /^\/(?!\/)/.test(next) && !next.startsWith("/auth") ? next : null;
   const returnTo = requiredRole ? `${pathname}${search}` : null;
   return (
     <section className="prototype-section max-w-4xl">
-      <h1>Wybierz osobę</h1>
-      <PrototypeDisclosure className="mt-4 mb-8" />
+      <h1>Zaloguj się lub testuj</h1>
+      {!operator && (
+        <>
+          <p className="my-4">
+            Wybierz rolę, a potem zaloguj się na własne konto albo użyj gotowej osoby testowej.
+          </p>
+          <div className="mb-6 flex flex-wrap gap-3" role="group" aria-label="Wybierz rolę">
+            {accessRoles.map((item) => (
+              <Button
+                key={item}
+                type="button"
+                variant={role === item ? "default" : "outline"}
+                aria-pressed={role === item}
+                disabled={entering}
+                onClick={() => {
+                  const nextParams = new URLSearchParams(params);
+                  nextParams.set("role", item);
+                  nextParams.delete("audience");
+                  nextParams.delete("next");
+                  navigate(`${pathname}?${nextParams}`, { replace: true });
+                }}
+              >
+                {accessRoleLabels[item]}
+              </Button>
+            ))}
+          </div>
+          <AccountPanel
+            key={role}
+            role={role}
+            onEnter={() => {
+              rememberRole(role);
+              if (run({ type: "select_person", id: null })) navigate(accountRoute(role));
+            }}
+          />
+        </>
+      )}
+      <h2 className="mt-8 mb-3">
+        Gotowe osoby do testów{operator ? "" : ` — ${accessRoleLabels[role]}`}
+      </h2>
+      <PrototypeDisclosure className="mt-4 mb-6" />
+      {entryError && <p role="alert">{entryError}</p>}
       <div className="grid gap-5 sm:grid-cols-2">
         {people.map((person) => (
           <article key={person.id} className="prototype-panel">
@@ -63,15 +117,30 @@ export function PersonPicker({
             <p className="my-4 text-muted-foreground">{person.headline}</p>
             <Button
               variant="outline"
-              onClick={() => {
-                run({ type: "select_person", id: person.id });
-                navigate(
-                  person.role === "candidate"
-                    ? (safeNext ?? returnTo ?? "/app")
-                    : person.role === "employer"
-                      ? (safeNext ?? returnTo ?? "/app/oferty")
-                      : (safeNext ?? returnTo ?? "/app/case"),
-                );
+              disabled={entering}
+              onClick={async () => {
+                setEntering(true);
+                setEntryError("");
+                try {
+                  if (cloudClient) {
+                    const { error } = await cloudClient.auth.signOut({ scope: "local" });
+                    if (error) throw error;
+                  }
+                  if (!run({ type: "select_person", id: person.id })) return;
+                  const destination =
+                    !requiredRole || person.role === requiredRole ? (safeNext ?? returnTo) : null;
+                  navigate(
+                    person.role === "candidate"
+                      ? (destination ?? "/app")
+                      : person.role === "employer"
+                        ? (destination ?? "/app/oferty")
+                        : (destination ?? "/app/case"),
+                  );
+                } catch {
+                  setEntryError("Nie udało się przełączyć na osobę testową. Spróbuj ponownie.");
+                } finally {
+                  setEntering(false);
+                }
               }}
             >
               Wejdź jako {person.name}
@@ -79,6 +148,11 @@ export function PersonPicker({
           </article>
         ))}
       </div>
+      {!operator && (
+        <Link className="mt-6 inline-block underline" to="/auth/sign-in?audience=operator">
+          Materiały prowadzącego — demo
+        </Link>
+      )}
     </section>
   );
 }
