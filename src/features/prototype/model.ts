@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { escoProfileSchema } from "../esco/contracts";
 import marketplace from "./data/marketplace.json" with { type: "json" };
 import people from "./data/people.json" with { type: "json" };
 import type { JobWithCompany } from "@/features/jobs/types";
@@ -54,6 +55,7 @@ export const jobSchema = z
     verificationStatus: z.enum(["unverified", "editorial", "employer_verified"]),
     sourceBrief: text.optional(),
     generatedDescription: text.optional(),
+    escoProfile: escoProfileSchema.optional(),
   })
   .refine(
     (job) =>

@@ -4,7 +4,15 @@ import { initialState } from "../../src/features/prototype/model";
 import { STORAGE_KEY } from "../../src/features/prototype/storage";
 import { readFile } from "node:fs/promises";
 async function choose(page: Page, name: string) {
-  await page.goto("/#/auth/sign-in");
+  const role =
+    name === "Karolina Wiśniewska"
+      ? "recruiter"
+      : name === "Tomasz Zieliński"
+        ? "hiring_manager"
+        : name === "Prowadzący"
+          ? null
+          : "candidate";
+  await page.goto(role ? `/#/auth/sign-in?role=${role}` : "/#/auth/sign-in?audience=operator");
   await page.getByRole("button", { name: `Wejdź jako ${name}`, exact: true }).click();
 }
 async function application(page: Page) {
@@ -171,7 +179,7 @@ test("fresh employer deep link selects the right persona and returns to candidat
   page,
 }) => {
   await page.goto("/#/app/kandydaci");
-  await expect(page.getByRole("heading", { name: "Wybierz osobę" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Zaloguj się lub testuj" })).toBeVisible();
   await expect(page.locator(".editorial-employer")).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Wejdź jako Anna Kowalska" })).toHaveCount(0);
   await page.getByRole("button", { name: "Wejdź jako Karolina Wiśniewska" }).click();
